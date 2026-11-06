@@ -95,7 +95,7 @@ with col_up2:
 
 col_up3, col_up4 = st.columns(2)
 with col_up3:
-    excel_file_enduser = st.file_uploader("Mentah End User (.xlsx)", type=["xlsx", "xls"])
+    excel_file_enduser = st.file_uploader("Sales End User (.xlsx)", type=["xlsx", "xls"])
 with col_up4:
     excel_file_top5 = st.file_uploader("TOP 50 GAP By Prod (.xlsx)", type=["xlsx", "xls"])
 
