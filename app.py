@@ -95,7 +95,7 @@ with col_up2:
 
 col_up3, col_up4 = st.columns(2)
 with col_up3:
-    excel_file_enduser = st.file_uploader("Sales End User (.xlsx)", type=["xlsx", "xls"])
+    excel_file_enduser = st.file_uploader("Mentah End User (.xlsx)", type=["xlsx", "xls"])
 with col_up4:
     excel_file_top5 = st.file_uploader("TOP 50 GAP By Prod (.xlsx)", type=["xlsx", "xls"])
 
@@ -360,7 +360,11 @@ def update_cover_date(prs, date_str):
                         r.font.size = Pt(20)
 
 def add_analysis_paragraph(tf, header_title, gap_val, gr_val, top5_str):
-    p_head = tf.add_paragraph() if len(tf.paragraphs[0].text.strip()) > 0 else tf.paragraphs[0]
+    if len(tf.paragraphs) > 0 and len(tf.paragraphs[0].text.strip()) == 0:
+        p_head = tf.paragraphs[0]
+    else:
+        p_head = tf.add_paragraph()
+        
     p_head.text = f"• {header_title} {gap_val} Mio vs LY, G/R {gr_val}%"
     p_head.line_spacing = 1.0
     p_head.space_before = Pt(2)
