@@ -215,12 +215,12 @@ def extract_store_data_rowdata(df_raw, store_code):
     clean_code_5 = str(store_code).zfill(5)
     clean_code_num = str(int(store_code))
     
-    col_a = df_raw.iloc[:, 0].astype(str).str.strip().str.zfill(5)
+    col_a = df_raw.iloc[:, 0].astype(str).str.strip().str.replace('.0', '', regex=False).str.zfill(5)
     col_b = df_raw.iloc[:, 1].astype(str).str.strip().str.split('.').str[0].str.zfill(2)
     col_aw = pd.to_numeric(df_raw.iloc[:, 48], errors='coerce').fillna(0)
     col_ax = pd.to_numeric(df_raw.iloc[:, 49], errors='coerce').fillna(0)
     
-    store_mask = (col_a == clean_code_5) | (col_a == clean_code_num.zfill(5))
+    store_mask = (col_a == clean_code_5) | (col_a == clean_code_num.zfill(5)) | (col_a == str(int(store_code)))
     
     if not store_mask.any():
         return None
@@ -263,20 +263,20 @@ def extract_store_data_rowdata(df_raw, store_code):
 
 def get_top5_products_str(df_top5, store_code, cust_grp_code):
     if df_top5 is None:
-        return ""
+        return []
         
     clean_code_5 = str(store_code).zfill(5)
     clean_code_num = str(int(store_code))
     cust_code_str = str(cust_grp_code).strip()
     
-    col_str = df_top5.iloc[:, 0].astype(str).str.strip()
+    col_str = df_top5.iloc[:, 0].astype(str).str.strip().str.replace('.0', '', regex=False).str.zfill(5)
     col_grp = df_top5.iloc[:, 6].astype(str).str.strip().str.split('.').str[0]
     
-    mask = ((col_str == clean_code_5) | (col_str == clean_code_num)) & (col_grp == cust_code_str)
+    mask = ((col_str == clean_code_5) | (col_str == clean_code_num.zfill(5)) | (col_str == str(int(store_code)))) & (col_grp == cust_code_str)
     df_filtered = df_top5[mask].copy()
     
     if df_filtered.empty:
-        return ""
+        return []
         
     prod_names = df_filtered.iloc[:, 2].astype(str).values
     gap_vals = df_filtered.iloc[:, 16].values
@@ -298,11 +298,12 @@ def get_top5_products_str(df_top5, store_code, cust_grp_code):
             abs_mio = abs(num_mio)
             formatted_num = f"{abs_mio:,.0f}"
             sign = "▲" if num < 0 else ""
-            top_items.append(f"{p_clean} {sign}{formatted_num} mio")
+            # Menggunakan "Mio" (M besar)
+            top_items.append(f"{p_clean} {sign}{formatted_num} Mio")
         except Exception:
-            top_items.append(f"{p_clean} {g_val} mio")
+            top_items.append(f"{p_clean} {g_val} Mio")
         
-    return ", ".join(top_items)
+    return top_items
 
 def set_cell_text_center(cell, text, font_size=12):
     cell.text = str(text)
@@ -359,7 +360,7 @@ def update_cover_date(prs, date_str):
                     for r in p.runs:
                         r.font.size = Pt(20)
 
-def add_analysis_paragraph(tf, header_title, gap_val, gr_val, top5_str):
+def add_analysis_block(tf, header_title, gap_val, gr_val, top5_list):
     if len(tf.paragraphs) > 0 and len(tf.paragraphs[0].text.strip()) == 0:
         p_head = tf.paragraphs[0]
     else:
@@ -373,15 +374,21 @@ def add_analysis_paragraph(tf, header_title, gap_val, gr_val, top5_str):
     p_head.font.bold = True
     p_head.font.color.rgb = RGBColor(0, 0, 0)
     
-    if top5_str:
-        p_body = tf.add_paragraph()
-        p_body.text = top5_str
-        p_body.line_spacing = 1.0
-        p_body.space_before = Pt(0)
-        p_body.space_after = Pt(6)
-        p_body.font.size = Pt(10)
-        p_body.font.bold = False
-        p_body.font.color.rgb = RGBColor(0, 0, 0)
+    # Membuat setiap item Top 5 produk turun ke baris baru masing-masing (per baris)
+    for item in top5_list:
+        p_item = tf.add_paragraph()
+        p_item.text = item
+        p_item.line_spacing = 1.0
+        p_item.space_before = Pt(0)
+        p_item.space_after = Pt(1)
+        p_item.font.size = Pt(10)
+        p_item.font.bold = False
+        p_item.font.color.rgb = RGBColor(0, 0, 0)
+        
+    # Spasi antar kategori (misal dari Retail ke Horeka)
+    if top5_list:
+        if len(tf.paragraphs) > 0:
+            tf.paragraphs[-1].space_after = Pt(4)
 
 # TOMBOL GENERATE
 if st.button("Generate File PPT", type="primary", use_container_width=True):
@@ -512,12 +519,12 @@ if st.button("Generate File PPT", type="primary", use_container_width=True):
                                 text_full = tf.text
                                 if "GAP Retail" in text_full or "GAP Horeka" in text_full or "GAP Service" in text_full:
                                     tf.clear()
-                                    add_analysis_paragraph(tf, "GAP Retail", gap_retail, gr_retail, top5_retail)
-                                    add_analysis_paragraph(tf, "GAP Horeka", gap_horeka, gr_horeka, top5_horeka)
-                                    add_analysis_paragraph(tf, "GAP Service", gap_service, gr_service, top5_service)
-                                elif "Sales" in text_full and ("Mio vs LY" in text_full or "(angka)" in text_full):
+                                    add_analysis_block(tf, "GAP Retail", gap_retail, gr_retail, top5_retail)
+                                    add_analysis_block(tf, "GAP Horeka", gap_horeka, gr_horeka, top5_horeka)
+                                    add_analysis_block(tf, "GAP Service", gap_service, gr_service, top5_service)
+                                elif "Sales" in text_full or len(text_full.strip()) == 0 and shape.top > 4000000:
                                     tf.clear()
-                                    add_analysis_paragraph(tf, "Sales", gap_enduser, gr_enduser, top5_enduser)
+                                    add_analysis_block(tf, "Sales", gap_enduser, gr_enduser, top5_enduser)
 
                         new_slide_dtl = prs.slides.add_slide(blank_layout)
                         for shape in slide_dtl.shapes:
@@ -646,12 +653,12 @@ if st.button("Generate File PPT", type="primary", use_container_width=True):
                                 text_full = tf.text
                                 if "GAP Retail" in text_full or "GAP Horeka" in text_full or "GAP Service" in text_full:
                                     tf.clear()
-                                    add_analysis_paragraph(tf, "GAP Retail", gap_retail, gr_retail, top5_retail)
-                                    add_analysis_paragraph(tf, "GAP Horeka", gap_horeka, gr_horeka, top5_horeka)
-                                    add_analysis_paragraph(tf, "GAP Service", gap_service, gr_service, top5_service)
-                                elif "Sales" in text_full and ("Mio vs LY" in text_full or "(angka)" in text_full):
+                                    add_analysis_block(tf, "GAP Retail", gap_retail, gr_retail, top5_retail)
+                                    add_analysis_block(tf, "GAP Horeka", gap_horeka, gr_horeka, top5_horeka)
+                                    add_analysis_block(tf, "GAP Service", gap_service, gr_service, top5_service)
+                                elif "Sales" in text_full or len(text_full.strip()) == 0 and shape.top > 4000000:
                                     tf.clear()
-                                    add_analysis_paragraph(tf, "Sales", gap_enduser, gr_enduser, top5_enduser)
+                                    add_analysis_block(tf, "Sales", gap_enduser, gr_enduser, top5_enduser)
 
                         new_slide_dtl = prs_all.slides.add_slide(blank_layout)
                         for shape in slide_dtl.shapes:
