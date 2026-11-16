@@ -117,7 +117,7 @@ REGION_MAP = {
         {"code": "06008", "name": "Cibitung"}, {"code": "06018", "name": "Bekasi"},
         {"code": "06023", "name": "Cikarang"}, {"code": "06024", "name": "Cirebon"},
         {"code": "06026", "name": "Bogor"}, {"code": "06027", "name": "Tasikmalaya"},
-        {"code": "06030", "name": "Pakansari"}, {"code": "06034", "name": "Kerawang"},
+        {"code": "06030", "name": "Pakansari"}, {"code": "06034", "name": "Karawang"},
         {"code": "06036", "name": "Cimahi"}, {"code": "06038", "name": "Tegal"}
     ],
     "Region 3": [
